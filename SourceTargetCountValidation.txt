@@ -8,7 +8,7 @@
                 "type": "SetVariable",
                 "dependsOn": [
                     {
-                        "activity": "Get Dataflow Job ID and Name",
+                        "activity": "Get Dataflow Job ID and Name_1 ",
                         "dependencyConditions": [
                             "Succeeded"
                         ]
