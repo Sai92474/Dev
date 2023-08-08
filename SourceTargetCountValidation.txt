@@ -1,0 +1,679 @@
+{
+    "name": "SourceTargetCountValidation",
+    "properties": {
+        "description": "Generic Pipeline for pulling data from any Snowflake to Azure Blob",
+        "activities": [
+            {
+                "name": "Set Job ID",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Get Dataflow Job ID and Name",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "Job_ID",
+                    "value": {
+                        "value": "0",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Set Job Name",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "Get Dataflow Job ID and Name",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "Job_Name",
+                    "value": {
+                        "value": "@activity('Get Dataflow Job ID and Name').output.firstRow.Job_Name",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Get Dataflow Job ID and Name",
+                "description": "call SP usp_register_dataflow_job",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[usp_register_dataflow_job]",
+                        "storedProcedureParameters": {
+                            "CdcColumnExpression": {
+                                "type": "String",
+                                "value": null
+                            },
+                            "JobLayer": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.JobLayer",
+                                    "type": "Expression"
+                                }
+                            },
+                            "JobName": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.JobName",
+                                    "type": "Expression"
+                                }
+                            },
+                            "PipelineFramework": {
+                                "type": "String",
+                                "value": "TDAP"
+                            },
+                            "SourceDatabase": {
+                                "type": "String",
+                                "value": {
+                                    "value": "STG_VXIVR_DB_QAT",
+                                    "type": "Expression"
+                                }
+                            },
+                            "SourceSystem": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.sourceSystem",
+                                    "type": "Expression"
+                                }
+                            },
+                            "SourceSystemTimeZone": {
+                                "type": "String",
+                                "value": "PST"
+                            },
+                            "SourceTable": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.sourceTableName",
+                                    "type": "Expression"
+                                }
+                            },
+                            "TargetDatabase": {
+                                "type": "String",
+                                "value": "STG_VXIVR_DB_QAT"
+                            },
+                            "TargetSystem": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.targetSystem",
+                                    "type": "Expression"
+                                }
+                            },
+                            "TargetTable": {
+                                "type": "String",
+                                "value": "SourceTargetCountValidation"
+                            },
+                            "UseCDCWindow": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.useCDCwindow",
+                                    "type": "Expression"
+                                }
+                            },
+                            "DeltaColumnFormat": {
+                                "type": "String",
+                                "value": null
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_Azure_SQLDB_AUDIT",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "call SP  usp_start_dataflow_job",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Set Job ID",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Set Job Name",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderStoredProcedureName": "[dbo].[usp_start_dataflow_job]",
+                        "storedProcedureParameters": {
+                            "CDC_Reset": {
+                                "type": "Boolean",
+                                "value": null
+                            },
+                            "Force_Restart": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.forceRestart",
+                                    "type": "Expression"
+                                }
+                            },
+                            "JOB_ID": {
+                                "type": "Int32",
+                                "value": {
+                                    "value": "@variables('Job_ID')",
+                                    "type": "Expression"
+                                }
+                            },
+                            "JOB_NAME": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.JobName",
+                                    "type": "Expression"
+                                }
+                            },
+                            "JobLayer": {
+                                "type": "String",
+                                "value": {
+                                    "value": "@pipeline().parameters.JobLayer",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_Azure_SQLDB_AUDIT",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "CALL SP_PROCESS_SourceTargetCountValidation",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "TDAP",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SnowflakeSource",
+                        "query": {
+                            "value": "CALL \nSTG_VXIVR_DB_DEV.VXIVR_T.SP_PROCESS_SourceTargetCountValidation(\n    '@{activity('call SP  usp_start_dataflow_job').output.firstRow.PROCESS_ID}',\n    '_QAT','@{activity('TDAP').output.firstRow.SRC_STAGED_EVENT_CNT}')",
+                            "type": "Expression"
+                        },
+                        "exportSettings": {
+                            "type": "SnowflakeExportCopyCommand"
+                        }
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SNOWFLAKE",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "SNOW_SCHEMA_NAME": "VXIVR_T",
+                            "SNOW_TABLE_NAME": "EDS_IVRCONSOLDB_DEV",
+                            "SNWFLK_ACCOUNTNAME": "tmobilenpe.west-us-2.privatelink",
+                            "SNWFLK_USERNAME": "RSC_DEV_SNF_IVR_DI@T-MOBILE.COM",
+                            "SNWFLK_DATABASE": "STG_VXIVR_DB_DEV",
+                            "SNWFLK_WAREHOUSE": "EDS_IVRCONSOL_DI_DEV_WH_01",
+                            "SNWFLK_ROLENAME": "R_EDS_SNF_IVR_DEV_DEVOPS",
+                            "SNWFLK_SECRETKEY": "RSC-DEV-SNF-IVR-DI-PASS"
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "Audit_Balance",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "CALL SP_PROCESS_SourceTargetCountValidation",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "[dbo].[usp_audit_balance]",
+                    "storedProcedureParameters": {
+                        "Count_Egress": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Count_Ingress": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Count_Inserted": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Count_Rejected": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Count_Type": {
+                            "value": "ROW",
+                            "type": "String"
+                        },
+                        "Count_Updated": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Exec_ID": {
+                            "value": {
+                                "value": "@activity('call SP  usp_start_dataflow_job').output.firstRow.PROCESS_ID",
+                                "type": "Expression"
+                            },
+                            "type": "Int64"
+                        },
+                        "JOB_ID": {
+                            "value": {
+                                "value": "@variables('Job_ID')",
+                                "type": "Expression"
+                            },
+                            "type": "Int32"
+                        },
+                        "JOB_STEP": {
+                            "value": "Snowflake",
+                            "type": "String"
+                        },
+                        "STATUS": {
+                            "value": "C",
+                            "type": "String"
+                        },
+                        "JOB_NAME": {
+                            "value": {
+                                "value": "@pipeline().parameters.JobName",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_IVR_SQLDB",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "End Data Flow",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "Close CDC Window",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Log_Exec_stats_CDC",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "[dbo].[usp_end_dataflow_job]",
+                    "storedProcedureParameters": {
+                        "Exec_ID": {
+                            "value": {
+                                "value": "@activity('call SP  usp_start_dataflow_job').output.firstRow.PROCESS_ID",
+                                "type": "Expression"
+                            },
+                            "type": "Int64"
+                        },
+                        "JOB_ID": {
+                            "value": {
+                                "value": "@variables('Job_ID')",
+                                "type": "Expression"
+                            },
+                            "type": "Int32"
+                        },
+                        "JOB_NAME": {
+                            "value": {
+                                "value": "@variables('Job_Name')",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "STATUS": {
+                            "value": "C",
+                            "type": "String"
+                        },
+                        "JobLayer": {
+                            "value": {
+                                "value": "@pipeline().parameters.JobLayer",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_IVR_SQLDB",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "Close CDC Window",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "Audit_Balance",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "[dbo].[usp_close_CDC_windows]",
+                    "storedProcedureParameters": {
+                        "JOB_ID": {
+                            "value": {
+                                "value": "@variables('Job_ID')",
+                                "type": "Expression"
+                            },
+                            "type": "Int32"
+                        },
+                        "JOB_NAME": {
+                            "value": {
+                                "value": "@pipeline().parameters.JobName",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_IVR_SQLDB",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "Log_Exec_stats_CDC",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "Audit_Balance",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "[dbo].[usp_log_exec_stats]",
+                    "storedProcedureParameters": {
+                        "Count_Egress": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Count_Ingress": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Count_Inserted": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Count_Rejected": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Count_Type": {
+                            "value": "ROW",
+                            "type": "String"
+                        },
+                        "Count_Updated": {
+                            "value": null,
+                            "type": "Int64"
+                        },
+                        "Exec_ID": {
+                            "value": {
+                                "value": "@activity('call SP  usp_start_dataflow_job').output.firstRow.PROCESS_ID",
+                                "type": "Expression"
+                            },
+                            "type": "Int64"
+                        },
+                        "JOB_ID": {
+                            "value": {
+                                "value": "@variables('Job_ID')",
+                                "type": "Expression"
+                            },
+                            "type": "Int32"
+                        },
+                        "JOB_STEP": {
+                            "value": "Ingestion_From_Snowflake_To_AzureBlob",
+                            "type": "String"
+                        },
+                        "STATUS": {
+                            "value": "C",
+                            "type": "String"
+                        },
+                        "JOB_NAME": {
+                            "value": {
+                                "value": "@pipeline().parameters.JobName",
+                                "type": "Expression"
+                            },
+                            "type": "String"
+                        },
+                        "PIP_RUN_ID": {
+                            "value": {
+                                "value": "@pipeline().RunId",
+                                "type": "Expression"
+                            }
+                        },
+                        "ERROR_MSG": {
+                            "value": null
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "LS_IVR_SQLDB",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "TDAP",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "call SP  usp_start_dataflow_job",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": "Select top 1 JOB_RUN_DATE, PROCESS_ID, SRC_STAGED_EVENT_CNT, LZ_INSERT_COUNT from \n  (\n     Select cast (STARTDTTM as Date) JOB_RUN_DATE, STARTDTTM, PROCESS_ID, [READ_ROWS] SRC_STAGED_EVENT_CNT, [INSERTED_ROWS] LZ_INSERT_COUNT\n   From [dbo].[JOB_EXECLOG] where\n  JOB_NAME = 'DPI_IVR_ADLS_TO_SNOWFLAKE_STAGE' \n  ) a\n  Where JOB_RUN_DATE=FORMAT(GETDATE(), 'yyyy-MM-dd')\n  Order by STARTDTTM desc",
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_Azure_SQLDB_AUDIT",
+                        "type": "DatasetReference"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "sourceSystem": {
+                "type": "string",
+                "defaultValue": "snowflake"
+            },
+            "sourceTableName": {
+                "type": "string",
+                "defaultValue": "SourceTargetCountValidation"
+            },
+            "targetSystem": {
+                "type": "string",
+                "defaultValue": "snowflake"
+            },
+            "sourceTablePartitionClause": {
+                "type": "string",
+                "defaultValue": "1=1"
+            },
+            "useCDCwindow": {
+                "type": "string",
+                "defaultValue": "false"
+            },
+            "forceRestart": {
+                "type": "string",
+                "defaultValue": "true"
+            },
+            "JobName": {
+                "type": "string",
+                "defaultValue": "SourceTargetCountValidation"
+            },
+            "JobLayer": {
+                "type": "string",
+                "defaultValue": "SnowflakeToSnowflake"
+            }
+        },
+        "variables": {
+            "whereClause": {
+                "type": "String"
+            },
+            "Job_ID": {
+                "type": "String"
+            },
+            "Job_Name": {
+                "type": "String"
+            },
+            "Execution_ID": {
+                "type": "String"
+            },
+            "error_message": {
+                "type": "String",
+                "defaultValue": "The Pipeline Has Failed. "
+            },
+            "starttime": {
+                "type": "String"
+            },
+            "endtime": {
+                "type": "String"
+            },
+            "where": {
+                "type": "String"
+            },
+            "startdttm": {
+                "type": "String"
+            },
+            "enddttm": {
+                "type": "String"
+            },
+            "wherecondition": {
+                "type": "String"
+            },
+            "Count_Egress": {
+                "type": "String"
+            },
+            "Count_Ingress": {
+                "type": "String"
+            },
+            "ERROR_MSG": {
+                "type": "String"
+            },
+            "date": {
+                "type": "String"
+            },
+            "SP_date": {
+                "type": "String"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2023-07-10T11:08:54Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}
